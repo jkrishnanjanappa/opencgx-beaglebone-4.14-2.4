@@ -54,3 +54,7 @@
 	path = layers/meta-qa
 	url = https://github.com/MontaVista-OpenSourceTechnology/meta-qa.git
 	branch = rocko
+[submodule "layers/meta-ti"]
+	path = layers/meta-ti
+	url = https://git.yoctoproject.org/git/meta-ti.git
+	branch = rocko

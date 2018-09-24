@@ -50,7 +50,8 @@ LAYER@https://github.com/MontaVista-OpenSourceTechnology/meta-cloud-services.git
 LAYER@https://github.com/MontaVista-OpenSourceTechnology/meta-montavista-cgl;branch=rocko \
 LAYER@https://github.com/MontaVista-OpenSourceTechnology/meta-qa.git;branch=rocko;layer=meta-qa-framework \
 LAYER@https://github.com/MontaVista-OpenSourceTechnology/meta-qa.git;branch=rocko;layer=meta-qa-testsuites \
-MACHINE@qemux86-64 \
+LAYER@https://git.yoctoproject.org/git/meta-ti;branch=rocko \
+MACHINE@beaglebone \
 DISTRO@mvista-cgx \
 SOURCE@https://github.com/MontaVista-OpenSourceTechnology/linux-mvista-2.4;branch=mvl-4.14/msd.cgx;meta=MV_KERNEL \
 SOURCE@https://github.com/MontaVista-OpenSourceTechnology/yocto-kernel-cache;branch=yocto-4.14;meta=MV_KERNELCACHE \
@@ -107,6 +108,11 @@ source $TOPDIR/layers/poky/oe-init-build-env $buildDir
 if [ "$?" != "0" ] ; then
    $EXIT 1
 fi
+
+if echo $REPO_CONFIG | grep -q "MACHINE@beaglebone " ; then
+   # Mask meta-yocto-bsp layer and to prefer beaglebone from meta-ti layer
+   MASK_META_YOCTO_BSP="1"
+fi
 export BB_NO_NETWORK="1"
 export LAYERS_RELATIVE="1"
 if [ -z "$LOCAL_SOURCES" ] ; then
@@ -134,9 +140,14 @@ for config in $REPO_CONFIG; do
        if [ "$MAKEDROP" != "1" ] ; then
           mkdir -p $buildDir/.layers
           if [ ! -e $buildDir/.layers/$layerDir-$sublayer ] ; then
-             echo "adding $layerDir/$sublayer"
-             bitbake-layers -F add-layer $TOPDIR/layers/$layerDir/$sublayer >/dev/null || $EXIT 1
-             touch $buildDir/.layers/$layerDir-$sublayer
+             if [ "$sublayer" = "meta-yocto-bsp" -a "$MASK_META_YOCTO_BSP" = "1" ]; then
+                echo "removing $layerDir/$sublayer"
+                bitbake-layers -F remove-layer $TOPDIR/layers/$layerDir/$sublayer >/dev/null || $EXIT 1
+             else
+                echo "adding $layerDir/$sublayer"
+                bitbake-layers -F add-layer $TOPDIR/layers/$layerDir/$sublayer >/dev/null || $EXIT 1
+                touch $buildDir/.layers/$layerDir-$sublayer
+             fi
           fi
        fi
     fi
